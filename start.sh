@@ -9,7 +9,7 @@ export TMPDIR=/data/tmp
 # 不配 VNC_PASS 则保持原样（纯内网用无所谓，挂公网前必须配）。
 if [ -n "$VNC_PASS" ]; then
   printf "%s:%s\n" "${VNC_USER:-shushu}" "$(openssl passwd -apr1 "$VNC_PASS")" > /etc/nginx/.htpasswd
-  sed -i 's/^#AUTH_BASIC //' /etc/nginx/sites-enabled/default
+  sed -i 's/#AUTH_BASIC //' /etc/nginx/sites-enabled/default
   echo "[start] nginx Basic Auth ON (user=${VNC_USER:-shushu})"
 fi
  
