@@ -12,6 +12,13 @@ if [ -n "$VNC_PASS" ]; then
   sed -i 's/#AUTH_BASIC //' /etc/nginx/sites-enabled/default
   echo "[start] nginx Basic Auth ON (user=${VNC_USER:-shushu})"
 fi
+
+# CORS（2026-09-25 加）：配了 CORS_ORIGIN（如 https://yuan36050-star.github.io）就允许该来源的网页直连 /mcp，
+# 给 Cove 前端的连接器用。只放行这一个来源；不配则维持原样（浏览器网页连不上 /mcp）。
+if [ -n "$CORS_ORIGIN" ]; then
+  sed -i "s|#CORS ||; s|__CORS_ORIGIN__|${CORS_ORIGIN%/}|g" /etc/nginx/sites-enabled/default
+  echo "[start] CORS ON for /mcp (origin=${CORS_ORIGIN%/})"
+fi
  
 # 启动虚拟显示器
 Xvfb :99 -screen 0 1280x900x24 &

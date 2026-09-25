@@ -1,0 +1,350 @@
+/* ─────────────────────────────────────────────────────────────
+   Cove · iOS 27 "Liquid Glass 2.0" design tokens
+   Cream canvas + terracotta brand, system type, spring motion.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* canvas & content */
+  --bg: #f7f5f0;
+  --bg-2: #efebe3;
+  --cell: #ffffff;
+  --cell-2: #fbf9f5;
+  --cell-pressed: #e7e2d9;
+  --label: #1d1b18;
+  --label-2: rgba(60, 52, 44, 0.64);
+  --label-3: rgba(60, 52, 44, 0.34);
+  --label-4: rgba(60, 52, 44, 0.18);
+  --fill: rgba(120, 108, 96, 0.16);
+  --fill-2: rgba(120, 108, 96, 0.12);
+  --fill-3: rgba(120, 108, 96, 0.08);
+  --separator: rgba(60, 52, 44, 0.17);
+  --user-bubble: #ebe6dc;
+  --code-bg: #f3f0ea;
+  --scrim: rgba(24, 18, 12, 0.22);
+
+  /* brand */
+  --accent: #c4643f;
+  --accent-pressed: #ab5231;
+  --accent-soft: rgba(196, 100, 63, 0.13);
+  --accent-text: #b2552f;
+  /* iOS 27 contrast fix for white text on the orange */
+  --on-accent: rgba(255, 255, 255, 0.98);
+
+  /* iOS system semantics */
+  --red: #ff3b30;
+  --red-text: #d70015;
+  --red-soft: rgba(255, 59, 48, 0.12);
+  --green: #34c759;
+  --green-text: #248a3d;
+  --green-soft: rgba(52, 199, 89, 0.14);
+  --orange: #ff9500;
+  --orange-text: #b25f00;
+  --orange-soft: rgba(255, 149, 0, 0.14);
+  --blue: #007aff;
+
+  /* ── Liquid Glass 2.0 ──
+     --glass-alpha is driven by Settings › Glass intensity (0.35 jelly … 0.85 solid).
+     The derived values are written from JS alongside it. */
+  --glass-alpha: 0.62;
+  --glass-alpha-d: 0.55;
+  --glass-alpha-strong: 0.8;
+  --glass-alpha-strong-d: 0.76;
+  --glass-rgb: 250, 247, 242;
+  --glass-bg: rgba(var(--glass-rgb), var(--glass-alpha));
+  --glass-bg-strong: rgba(var(--glass-rgb), var(--glass-alpha-strong));
+  --glass-filter: blur(24px) saturate(180%);
+  /* crisp edges instead of shadows: top-lit rim + a hairline that holds on pure white */
+  --glass-rim-top: rgba(255, 255, 255, 0.75);
+  --glass-rim-bottom: rgba(255, 255, 255, 0.3);
+  --glass-hairline: rgba(70, 52, 36, 0.16);
+  /* selection inside glass is a darker fill than its surroundings */
+  --glass-selected: rgba(80, 56, 32, 0.1);
+
+  /* type — system stack only */
+  --font: -apple-system, 'SF Pro Text', 'PingFang SC', sans-serif;
+  --font-serif: ui-serif, 'New York', 'PingFang SC', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-reading: var(--font);
+  --fs: 17px;
+
+  /* motion */
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-dur: 420ms;
+  --spring-dur-long: 500ms;
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* metrics */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --nav-h: 44px;
+  --tabbar-h: 58px;
+  --tabbar-bottom: max(10px, calc(var(--sab) - 12px));
+  --tabbar-space: calc(var(--tabbar-h) + var(--tabbar-bottom) + 10px);
+  --radius-cell: 22px;
+  --content-w: 720px;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #151412;
+  --bg-2: #0f0e0d;
+  --cell: #242220;
+  --cell-2: #2b2926;
+  --cell-pressed: #3a3733;
+  --label: #f3efe8;
+  --label-2: rgba(236, 228, 216, 0.62);
+  --label-3: rgba(236, 228, 216, 0.32);
+  --label-4: rgba(236, 228, 216, 0.16);
+  --fill: rgba(150, 140, 128, 0.28);
+  --fill-2: rgba(150, 140, 128, 0.22);
+  --fill-3: rgba(150, 140, 128, 0.14);
+  --separator: rgba(236, 228, 216, 0.14);
+  --user-bubble: #35312c;
+  --code-bg: #1c1b19;
+  --scrim: rgba(0, 0, 0, 0.45);
+
+  --accent: #d9774f;
+  --accent-pressed: #c4643f;
+  --accent-soft: rgba(217, 119, 79, 0.2);
+  --accent-text: #eb946f;
+
+  --red: #ff453a;
+  --red-text: #ff6961;
+  --red-soft: rgba(255, 69, 58, 0.18);
+  --green: #30d158;
+  --green-text: #30d158;
+  --green-soft: rgba(48, 209, 88, 0.16);
+  --orange: #ff9f0a;
+  --orange-text: #ffb340;
+  --orange-soft: rgba(255, 159, 10, 0.16);
+  --blue: #0a84ff;
+
+  /* iOS 27 dark glass is lighter than 26: warm rgba(44,38,32,0.55) at the default intensity */
+  --glass-rgb: 44, 38, 32;
+  --glass-bg: rgba(var(--glass-rgb), var(--glass-alpha-d));
+  --glass-bg-strong: rgba(var(--glass-rgb), var(--glass-alpha-strong-d));
+  --glass-rim-top: rgba(255, 255, 255, 0.3);
+  --glass-rim-bottom: rgba(255, 255, 255, 0.08);
+  --glass-hairline: rgba(0, 0, 0, 0.42);
+  /* inverted from iOS 26: the selected item sits in a darker well */
+  --glass-selected: rgba(0, 0, 0, 0.32);
+  color-scheme: dark;
+}
+
+/* No backdrop-filter (or reduced transparency) → 92% solid material. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root,
+  :root[data-theme='dark'] {
+    --glass-bg: rgba(var(--glass-rgb), 0.92);
+    --glass-bg-strong: rgba(var(--glass-rgb), 0.92);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  :root[data-theme='dark'] {
+    --glass-bg: rgba(var(--glass-rgb), 0.92);
+    --glass-bg-strong: rgba(var(--glass-rgb), 0.92);
+  }
+}
+
+:root[data-fs='sm'] { --fs: 15px; }
+:root[data-fs='lg'] { --fs: 19px; }
+:root[data-afont='serif'] { --font-reading: var(--font-serif); }
+
+/* ───────── Glass material ───────── */
+
+.glass {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+  /* a crisp 0.5px line (spread only, no blur) so glass holds its own on white */
+  box-shadow: 0 0 0 0.5px var(--glass-hairline);
+}
+.glass.strong {
+  background: var(--glass-bg-strong);
+}
+/* 1px top-lit rim: bright at the top edge fading toward the bottom */
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(to bottom, var(--glass-rim-top), var(--glass-rim-bottom));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ───────── Base ───────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--label);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+a {
+  color: var(--accent-text);
+}
+
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+/* SF Symbols look: thin, round-capped strokes everywhere */
+svg.lucide {
+  stroke-width: 1.7px;
+  flex: none;
+}
+
+.scroll {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--label-4) transparent;
+  }
+  .scroll::-webkit-scrollbar {
+    display: block;
+    width: 8px;
+  }
+  .scroll::-webkit-scrollbar-thumb {
+    background: var(--label-4);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ───────── Motion ───────── */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes push-in {
+  from { opacity: 0; transform: translateX(36px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes menu-in {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, -24px) scale(0.92); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes spin-steps {
+  to { transform: rotate(360deg); }
+}
+@keyframes dot-pulse {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
