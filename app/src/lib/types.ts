@@ -237,6 +237,8 @@ export interface Settings {
   theme: 'system' | 'light' | 'dark';
   fontSize: 'sm' | 'md' | 'lg';
   assistantFont: 'serif' | 'sans';
+  /** Liquid Glass intensity: 0.35 (jelly) … 0.85 (solid). */
+  glassAlpha: number;
   enterToSend: 'auto' | 'enter' | 'mod-enter';
   defaultProviderId?: string;
   defaultModel?: string;

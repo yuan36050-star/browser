@@ -28,6 +28,11 @@ export const en = {
   'common.showLess': 'Show less',
   'common.value': 'Value',
 
+  // tab bar
+  'tab.chats': 'Chats',
+  'tab.history': 'History',
+  'tab.settings': 'Settings',
+
   // navigation
   'nav.menu': 'Menu',
   'nav.projects': 'Projects',
@@ -391,6 +396,11 @@ export const en = {
   'settings.dark': 'Dark',
   'settings.textSize': 'Text size',
   'settings.assistantFont': 'Reply font',
+  'settings.glass': 'Glass intensity',
+  'settings.glassHint': 'How see-through the bars, tab bar and sheets are.',
+  'glass.jelly': 'Jelly',
+  'glass.balanced': 'Balanced',
+  'glass.solid': 'Solid',
   'settings.serif': 'Serif',
   'settings.sans': 'Sans',
   'settings.enterToSend': 'Enter key',

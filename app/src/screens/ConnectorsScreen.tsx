@@ -9,9 +9,8 @@ import {
   IconButton,
   KeyValueEditor,
   Row,
-  Screen,
-  ScreenBar,
-  Section,
+  Page,
+    Section,
   Segmented,
   Sheet,
   StatusDot,
@@ -72,15 +71,15 @@ export function ConnectorsList() {
   const [presetOpen, setPresetOpen] = useState(false);
   return (
     <>
-      <ScreenBar
+      <Page
         title={t('nav.connectors')}
         right={
           <IconButton label={t('connectors.add')} onClick={() => setPresetOpen(true)}>
             <Plus size={21} />
           </IconButton>
         }
-      />
-      <Screen>
+        back="/settings"
+      >
         <p className="lead">{t('connectors.lead')}</p>
         {connectors.length === 0 ? (
           <Empty
@@ -107,7 +106,7 @@ export function ConnectorsList() {
             ))}
           </Section>
         )}
-      </Screen>
+      </Page>
       <Sheet open={presetOpen} onClose={() => setPresetOpen(false)} title={t('connectors.add')}>
         <div className="preset-grid">
           {PRESETS.map((p) => (
@@ -145,8 +144,9 @@ export function ConnectorEditor({ id, preset }: { id: string; preset?: string })
   if (!draft) {
     return (
       <>
-        <ScreenBar title={t('nav.connectors')} back="/connectors" />
-        <Empty title={t('common.notFound')} />
+        <Page title={t('nav.connectors')} back="/connectors">
+          <Empty title={t('common.notFound')} />
+        </Page>
       </>
     );
   }
@@ -187,7 +187,7 @@ export function ConnectorEditor({ id, preset }: { id: string; preset?: string })
 
   return (
     <>
-      <ScreenBar
+      <Page
         title={isNew ? t('connectors.new') : draft.name || t('nav.connectors')}
         back="/connectors"
         right={
@@ -204,9 +204,7 @@ export function ConnectorEditor({ id, preset }: { id: string; preset?: string })
           >
             {t('common.save')}
           </Button>
-        }
-      />
-      <Screen narrow>
+        } narrow>
         {isNew && presetNote && <p className="lead">{presetNote}</p>}
         <Section>
           <div className="form">
@@ -355,7 +353,7 @@ export function ConnectorEditor({ id, preset }: { id: string; preset?: string })
             />
           </Section>
         )}
-      </Screen>
+      </Page>
     </>
   );
 }

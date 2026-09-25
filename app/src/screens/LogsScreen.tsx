@@ -1,6 +1,6 @@
 import { Copy, Download, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { cx, Empty, IconButton, Screen, ScreenBar, Spinner, Switch } from '../components/ui';
+import { cx, Empty, IconButton, Page, Spinner, Switch } from '../components/ui';
 import { useT } from '../i18n';
 import { clearStore, getLogs } from '../lib/db';
 import { confirmDialog } from '../lib/dialog';
@@ -39,8 +39,9 @@ export function LogsScreen() {
 
   return (
     <>
-      <ScreenBar
+      <Page
         title={t('nav.logs')}
+        back="/settings"
         right={
           <>
             <IconButton label={t('logs.export')} onClick={() => downloadFile(`cove-logs-${today()}.json`, JSON.stringify(filtered, null, 2))}>
@@ -59,27 +60,26 @@ export function LogsScreen() {
             </IconButton>
           </>
         }
-      />
-      <div className="logs-filters">
-        <div className="chip-row scroll-x">
-          {CATS.map((c) => (
-            <button key={c} className={cx('filter-chip', cat === c && 'on')} onClick={() => setCat(c)}>
-              {t(`logs.cat.${c}` as never)}
-            </button>
-          ))}
-        </div>
-        <div className="logs-filter-row">
-          <div className="search-box">
-            <Search size={15} />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('logs.search')} autoCapitalize="off" />
+      >
+        <div className="logs-filters">
+          <div className="chip-row scroll-x">
+            {CATS.map((c) => (
+              <button key={c} className={cx('filter-chip', cat === c && 'on')} onClick={() => setCat(c)}>
+                {t(`logs.cat.${c}` as never)}
+              </button>
+            ))}
           </div>
-          <label className="inline-switch">
-            <Switch checked={problems} onChange={setProblems} label={t('logs.problems')} />
-            <span>{t('logs.problems')}</span>
-          </label>
+          <div className="logs-filter-row">
+            <div className="search-box">
+              <Search size={15} />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('logs.search')} autoCapitalize="off" />
+            </div>
+            <label className="inline-switch">
+              <Switch checked={problems} onChange={setProblems} label={t('logs.problems')} />
+              <span>{t('logs.problems')}</span>
+            </label>
+          </div>
         </div>
-      </div>
-      <Screen>
         {!logs ? (
           <div className="center pad">
             <Spinner />
@@ -120,7 +120,7 @@ export function LogsScreen() {
             )}
           </div>
         )}
-      </Screen>
+      </Page>
     </>
   );
 }

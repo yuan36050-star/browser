@@ -1,7 +1,7 @@
 import { FileText, FolderOpen, MessageSquare, Plus, Sparkles, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ModelPicker } from '../components/ModelPicker';
-import { Button, Empty, Field, IconButton, Row, Screen, ScreenBar, Section, Switch, TextArea, TextInput } from '../components/ui';
+import { Button, Empty, Field, IconButton, Row, Page, Section, Switch, TextArea, TextInput } from '../components/ui';
 import { useT } from '../i18n';
 import { resolveModel, resolveProvider } from '../lib/agent';
 import { confirmDialog, promptDialog } from '../lib/dialog';
@@ -36,15 +36,15 @@ export function ProjectsList() {
   };
   return (
     <>
-      <ScreenBar
+      <Page
         title={t('nav.projects')}
         right={
           <IconButton label={t('projects.new')} onClick={create}>
             <Plus size={21} />
           </IconButton>
         }
-      />
-      <Screen>
+        back="/history"
+      >
         <p className="lead">{t('projects.lead')}</p>
         {projects.length === 0 ? (
           <Empty
@@ -74,7 +74,7 @@ export function ProjectsList() {
             })}
           </div>
         )}
-      </Screen>
+      </Page>
     </>
   );
 }
@@ -112,8 +112,9 @@ export function ProjectDetail({ id }: { id: string }) {
   if (!draft) {
     return (
       <>
-        <ScreenBar title={t('nav.projects')} back="/projects" />
-        <Empty title={t('common.notFound')} />
+        <Page title={t('nav.projects')} back="/projects">
+          <Empty title={t('common.notFound')} />
+        </Page>
       </>
     );
   }
@@ -141,16 +142,14 @@ export function ProjectDetail({ id }: { id: string }) {
 
   return (
     <>
-      <ScreenBar
+      <Page
         title={draft.name || t('projects.untitled')}
         back="/projects"
         right={
           <Button size="sm" variant="primary" icon={<MessageSquare size={15} />} onClick={() => navigate(`/?project=${draft.id}`)}>
             {t('projects.chat')}
           </Button>
-        }
-      />
-      <Screen narrow>
+        } narrow>
         <div className="project-head">
           <button
             className="emoji-btn"
@@ -248,7 +247,7 @@ export function ProjectDetail({ id }: { id: string }) {
             }}
           />
         </Section>
-      </Screen>
+      </Page>
       <ModelPicker
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}

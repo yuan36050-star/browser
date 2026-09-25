@@ -1,27 +1,14 @@
-import {
-  ArrowDown,
-  Check,
-  Download,
-  FolderInput,
-  Menu as MenuIcon,
-  MoreHorizontal,
-  Pencil,
-  Pin,
-  PinOff,
-  SquarePen,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { ArrowDown, Check, Download, Ellipsis, FolderInput, Pencil, Pin, PinOff, SquarePen, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Composer, type ChatOpts } from '../components/Composer';
 import { Logo } from '../components/Logo';
 import { AssistantMessage, UserMessage } from '../components/Message';
-import { Button, cx, Empty, IconButton, Menu, Sheet, useMenu } from '../components/ui';
+import { Button, cx, Empty, IconButton, Menu, NavBar, Row, Section, Sheet, useLargeTitle, useMenu } from '../components/ui';
 import { useT } from '../i18n';
 import { resolveModel, resolveProvider, sendMessage, stop } from '../lib/agent';
 import { confirmDialog, promptDialog } from '../lib/dialog';
 import { navigate } from '../lib/router';
-import { createConversation, deleteConv, loadMessages, setDrawer, updateConv, useApp } from '../lib/store';
+import { createConversation, deleteConv, loadMessages, updateConv, useApp } from '../lib/store';
 import type { Attachment, ChatMessage } from '../lib/types';
 import { downloadFile } from '../lib/util';
 
@@ -69,6 +56,7 @@ export function ChatScreen({ convId, projectId }: { convId?: string; projectId?:
   const addFilesRef = useRef<((files: File[]) => void) | null>(null);
   const menu = useMenu();
   const [moveOpen, setMoveOpen] = useState(false);
+  const large = useLargeTitle();
 
   useEffect(() => {
     setDraft({ projectId });
@@ -98,14 +86,16 @@ export function ChatScreen({ convId, projectId }: { convId?: string; projectId?:
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
+    large.onScroll(el);
     const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     stick.current = near;
     setAtBottom(near);
   };
   useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (el && stick.current) el.scrollTop = el.scrollHeight;
-  }, [messages, loaded]);
+    if (el && stick.current && messages?.length) el.scrollTop = el.scrollHeight;
+    if (el) large.onScroll(el);
+  }, [messages, loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollToBottom = () => {
     const el = scrollRef.current;
@@ -141,6 +131,12 @@ export function ChatScreen({ convId, projectId }: { convId?: string; projectId?:
   };
 
   const title = conv ? conv.title || t('chat.untitled') : project ? project.name : t('chat.new');
+  const titleNode = (
+    <>
+      {project && <span className="title-emoji">{project.emoji}</span>}
+      {title}
+    </>
+  );
   const msgs = messages ?? [];
   const lastId = msgs[msgs.length - 1]?.id;
 
@@ -158,86 +154,81 @@ export function ChatScreen({ convId, projectId }: { convId?: string; projectId?:
       }}
       onDrop={onDrop}
     >
-      <header className="topbar">
-        <div className="topbar-side">
-          <IconButton label={t('nav.menu')} className="menu-only" onClick={() => setDrawer(true)}>
-            <MenuIcon size={21} />
-          </IconButton>
-        </div>
-        <button className="topbar-title-btn" onClick={(e) => conv && menu.show(e.currentTarget)} disabled={!conv}>
-          <span className="topbar-title">
-            {project && <span className="title-emoji">{project.emoji}</span>}
-            {title}
-          </span>
-          {conv && <MoreHorizontal size={16} className="title-more" />}
-        </button>
-        <div className="topbar-side right">
-          <IconButton label={t('chat.new')} onClick={() => navigate(project ? `/?project=${project.id}` : '/')}>
-            <SquarePen size={19} />
-          </IconButton>
-        </div>
-      </header>
+      <NavBar
+        title={titleNode}
+        scrolled={large.state.scrolled}
+        collapsed={large.state.collapsed}
+        onTitleClick={conv ? (el) => menu.show(el) : undefined}
+        right={
+          conv && (
+            <>
+              <IconButton className="nav-btn" label={t('chat.new')} onClick={() => navigate(project ? `/?project=${project.id}` : '/')}>
+                <SquarePen size={21} />
+              </IconButton>
+              <IconButton className="nav-btn" label={t('common.manage')} onClick={(e) => menu.show(e.currentTarget)}>
+                <Ellipsis size={22} />
+              </IconButton>
+            </>
+          )
+        }
+      />
 
       <div className="chat-scroll scroll" ref={scrollRef} onScroll={onScroll}>
-        {convId && !conv ? (
-          <Empty title={t('chat.notFound')} action={<Button onClick={() => navigate('/')}>{t('chat.new')}</Button>} />
-        ) : msgs.length === 0 ? (
-          <div className="welcome">
-            <Logo size={44} />
-            <h1 className="greeting">{userName ? t('greet.named', { greeting: t(greetingKey()), name: userName }) : t(greetingKey())}</h1>
-            {project && (
-              <button className="project-card" onClick={() => navigate(`/projects/${project.id}`)}>
-                <span className="project-emoji">{project.emoji}</span>
-                <span>
-                  <strong>{project.name}</strong>
-                  {project.description && <span className="muted"> — {project.description}</span>}
-                </span>
-              </button>
-            )}
-            {providers.length === 0 ? (
-              <div className="onboard">
-                <p>{t('onboard.text')}</p>
-                <div className="onboard-grid">
-                  <button onClick={() => navigate('/providers/new?preset=anthropic')}>
-                    <strong>Anthropic</strong>
-                    <span>{t('onboard.anthropic')}</span>
-                  </button>
-                  <button onClick={() => navigate('/providers/new?preset=cc-bridge')}>
-                    <strong>cc-bridge</strong>
-                    <span>{t('onboard.bridge')}</span>
-                  </button>
-                  <button onClick={() => navigate('/providers/new?preset=custom-openai')}>
-                    <strong>{t('onboard.openai')}</strong>
-                    <span>{t('onboard.openaiText')}</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="suggestions">
-                {(['suggest.1', 'suggest.2', 'suggest.3'] as const).map((k) => (
-                  <button key={k} onClick={() => onSend(t(k), [])}>
-                    {t(k)}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="messages">
-            {msgs.map((m) =>
-              m.role === 'user' ? (
-                <UserMessage key={m.id} m={m} convId={convId!} busy={busy} />
+        <div className="chat-inner">
+          <h1 ref={large.titleRef} className="large-title">
+            {titleNode}
+          </h1>
+          {convId && !conv ? (
+            <Empty title={t('chat.notFound')} action={<Button variant="primary" onClick={() => navigate('/')}>{t('chat.new')}</Button>} />
+          ) : msgs.length === 0 ? (
+            <div className="welcome">
+              <Logo size={52} />
+              <p className="greeting">{userName ? t('greet.named', { greeting: t(greetingKey()), name: userName }) : t(greetingKey())}</p>
+              {project && (
+                <Section>
+                  <Row
+                    icon={<span className="row-emoji">{project.emoji}</span>}
+                    title={project.name}
+                    subtitle={project.description || undefined}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                    chevron
+                  />
+                </Section>
+              )}
+              {providers.length === 0 ? (
+                <>
+                  <p className="welcome-note">{t('onboard.text')}</p>
+                  <Section>
+                    <Row title="Anthropic" subtitle={t('onboard.anthropic')} onClick={() => navigate('/providers/new?preset=anthropic')} chevron />
+                    <Row title="cc-bridge" subtitle={t('onboard.bridge')} onClick={() => navigate('/providers/new?preset=cc-bridge')} chevron />
+                    <Row title={t('onboard.openai')} subtitle={t('onboard.openaiText')} onClick={() => navigate('/providers/new?preset=custom-openai')} chevron />
+                  </Section>
+                </>
               ) : (
-                <AssistantMessage key={m.id} m={m} convId={convId!} isLast={m.id === lastId} busy={busy} />
-              ),
-            )}
-          </div>
-        )}
+                <Section>
+                  {(['suggest.1', 'suggest.2', 'suggest.3'] as const).map((k) => (
+                    <Row key={k} className="suggestion" title={t(k)} onClick={() => onSend(t(k), [])} />
+                  ))}
+                </Section>
+              )}
+            </div>
+          ) : (
+            <div className="messages">
+              {msgs.map((m) =>
+                m.role === 'user' ? (
+                  <UserMessage key={m.id} m={m} convId={convId!} busy={busy} />
+                ) : (
+                  <AssistantMessage key={m.id} m={m} convId={convId!} isLast={m.id === lastId} busy={busy} />
+                ),
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {!atBottom && msgs.length > 0 && (
         <button className="to-bottom" onClick={scrollToBottom} aria-label={t('chat.toBottom')}>
-          <ArrowDown size={18} />
+          <ArrowDown size={19} />
         </button>
       )}
 
@@ -253,7 +244,7 @@ export function ChatScreen({ convId, projectId }: { convId?: string; projectId?:
 
       {dragging && (
         <div className="drop-overlay">
-          <Upload size={28} />
+          <Upload size={30} />
           <span>{t('chat.drop')}</span>
         </div>
       )}
@@ -263,11 +254,11 @@ export function ChatScreen({ convId, projectId }: { convId?: string; projectId?:
           anchor={menu.anchor}
           open={menu.open}
           onClose={menu.close}
-          align="left"
+          align="right"
           items={[
             {
               label: t('common.rename'),
-              icon: <Pencil size={16} />,
+              icon: <Pencil size={18} />,
               onClick: async () => {
                 const v = await promptDialog({ title: t('common.rename'), field: { value: conv.title } });
                 if (v !== null) updateConv(conv.id, { title: v.trim() });
@@ -275,23 +266,23 @@ export function ChatScreen({ convId, projectId }: { convId?: string; projectId?:
             },
             {
               label: conv.pinned ? t('chat.unpin') : t('chat.pin'),
-              icon: conv.pinned ? <PinOff size={16} /> : <Pin size={16} />,
+              icon: conv.pinned ? <PinOff size={18} /> : <Pin size={18} />,
               onClick: () => updateConv(conv.id, { pinned: !conv.pinned }),
             },
             {
               label: t('chat.moveToProject'),
-              icon: <FolderInput size={16} />,
+              icon: <FolderInput size={18} />,
               onClick: () => setMoveOpen(true),
             },
             {
               label: t('chat.export'),
-              icon: <Download size={16} />,
+              icon: <Download size={18} />,
               onClick: () => downloadFile(`${(conv.title || 'chat').replace(/[^\w一-龥-]+/g, '_')}.md`, toMarkdown(conv.title, msgs), 'text/markdown'),
             },
             'sep',
             {
               label: t('common.delete'),
-              icon: <Trash2 size={16} />,
+              icon: <Trash2 size={18} />,
               danger: true,
               onClick: async () => {
                 if (await confirmDialog({ title: t('chat.deleteConfirm'), danger: true, confirmLabel: t('common.delete') })) {
@@ -308,18 +299,18 @@ export function ChatScreen({ convId, projectId }: { convId?: string; projectId?:
           <div className="pick-list">
             <button className={cx('pick-row', !conv.projectId && 'on')} onClick={() => { updateConv(conv.id, { projectId: undefined }); setMoveOpen(false); }}>
               <span className="pick-main"><span className="pick-title">{t('opts.noProject')}</span></span>
-              {!conv.projectId && <Check size={18} />}
+              {!conv.projectId && <Check size={20} />}
             </button>
             {projects.map((p) => (
               <button key={p.id} className={cx('pick-row', conv.projectId === p.id && 'on')} onClick={() => { updateConv(conv.id, { projectId: p.id }); setMoveOpen(false); }}>
                 <span className="pick-main"><span className="pick-title">{p.emoji} {p.name}</span></span>
-                {conv.projectId === p.id && <Check size={18} />}
+                {conv.projectId === p.id && <Check size={20} />}
               </button>
             ))}
           </div>
         </Sheet>
       )}
-      <div className={cx('sr-only')} aria-live="polite">
+      <div className="sr-only" aria-live="polite">
         {busy ? t('msg.working') : ''}
       </div>
     </div>

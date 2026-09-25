@@ -3,8 +3,8 @@ import {
   Brain,
   Database,
   Download,
+  Droplets,
   ExternalLink,
-  FolderOpen,
   Globe,
   KeyRound,
   Languages,
@@ -22,11 +22,12 @@ import {
 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { ModelPicker } from '../components/ModelPicker';
-import { Badge, Button, Field, IconButton, Row, Screen, ScreenBar, Section, Segmented, Select, Sheet, Switch, TextArea, TextInput } from '../components/ui';
+import { Badge, Button, Field, IconButton, Page, Row, Section, Segmented, Select, Sheet, Slider, Switch, TextArea, TextInput } from '../components/ui';
 import { useT } from '../i18n';
 import { exportAll, importAll, wipeAll } from '../lib/backup';
 import { confirmDialog } from '../lib/dialog';
 import { pickFiles } from '../lib/files';
+import { applyGlass, clampGlass, GLASS_MAX, GLASS_MIN, GLASS_PRESETS, presetFor, type GlassPreset } from '../lib/glass';
 import { navigate } from '../lib/router';
 import { toast, updateSettings, useApp } from '../lib/store';
 import { allBuiltinNames } from '../lib/tools/builtin';
@@ -56,13 +57,14 @@ export function SettingsScreen({ section }: { section?: string }) {
   const s = useApp((st) => st.settings);
   const providers = useApp((st) => st.providers);
   const connectors = useApp((st) => st.connectors);
-  const projects = useApp((st) => st.projects);
   const pods = useApp((st) => st.pods);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [withKeys, setWithKeys] = useState(false);
   const [withLogs, setWithLogs] = useState(false);
   const [storage, setStorage] = useState<string>('');
+  const [glass, setGlass] = useState(() => clampGlass(s.glassAlpha));
+  useEffect(() => setGlass(clampGlass(s.glassAlpha)), [s.glassAlpha]);
   const set = (patch: Partial<Settings>) => updateSettings(patch);
   const defaultProvider = providers.find((p) => p.id === s.defaultProviderId);
 
@@ -85,12 +87,10 @@ export function SettingsScreen({ section }: { section?: string }) {
 
   return (
     <>
-      <ScreenBar title={t('nav.settings')} />
-      <Screen narrow>
+      <Page title={t('nav.settings')} narrow>
         <Section>
           <Row icon={<Server size={18} />} title={t('nav.providers')} detail={providers.length || undefined} onClick={() => navigate('/providers')} chevron />
           <Row icon={<Plug size={18} />} title={t('nav.connectors')} detail={connectors.length || undefined} onClick={() => navigate('/connectors')} chevron />
-          <Row icon={<FolderOpen size={18} />} title={t('nav.projects')} detail={projects.length || undefined} onClick={() => navigate('/projects')} chevron />
           <Row icon={<Box size={18} />} title={t('nav.pods')} detail={pods.length || undefined} onClick={() => navigate('/pods')} chevron />
           <Row icon={<ScrollText size={18} />} title={t('nav.logs')} onClick={() => navigate('/logs')} chevron />
         </Section>
@@ -145,6 +145,40 @@ export function SettingsScreen({ section }: { section?: string }) {
             <Field label={<><Moon size={15} /> {t('settings.theme')}</>}>
               <Segmented value={s.theme} onChange={(v) => set({ theme: v })} options={[{ value: 'system', label: t('settings.system') }, { value: 'light', label: t('settings.light') }, { value: 'dark', label: t('settings.dark') }]} />
             </Field>
+            <div className="field glass-control">
+              <span className="field-label">
+                <Droplets size={15} /> {t('settings.glass')}
+              </span>
+              <Segmented<GlassPreset | ''>
+                value={presetFor(glass)}
+                onChange={(v) => {
+                  if (!v) return;
+                  setGlass(GLASS_PRESETS[v]);
+                  set({ glassAlpha: GLASS_PRESETS[v] });
+                }}
+                options={[
+                  { value: 'jelly', label: t('glass.jelly') },
+                  { value: 'balanced', label: t('glass.balanced') },
+                  { value: 'solid', label: t('glass.solid') },
+                ]}
+              />
+              <div className="slider-row">
+                <span className="slider-cap">{t('glass.jelly')}</span>
+                <Slider
+                  value={glass}
+                  min={GLASS_MIN}
+                  max={GLASS_MAX}
+                  label={t('settings.glass')}
+                  onChange={(v) => {
+                    setGlass(v);
+                    applyGlass(v);
+                  }}
+                  onCommit={(v) => v !== s.glassAlpha && set({ glassAlpha: v })}
+                />
+                <span className="slider-cap">{t('glass.solid')}</span>
+              </div>
+              <span className="field-hint">{t('settings.glassHint')}</span>
+            </div>
             <Field label={<><Type size={15} /> {t('settings.textSize')}</>}>
               <Segmented value={s.fontSize} onChange={(v) => set({ fontSize: v })} options={[{ value: 'sm', label: 'A−' }, { value: 'md', label: 'A' }, { value: 'lg', label: 'A+' }]} />
             </Field>
@@ -287,7 +321,7 @@ export function SettingsScreen({ section }: { section?: string }) {
           />
         </Section>
         <p className="fine">{t('settings.privacy')}</p>
-      </Screen>
+      </Page>
 
       <ModelPicker
         open={pickerOpen}

@@ -12,6 +12,7 @@ A mobile-first chat client for any LLM API — in the spirit of the Claude mobil
 - **Pods** — small key-value stores shared by you and the AI. The AI can create, read, write and delete them with tools, so they work as its memory, journal or a vault. Per-pod AI access (none / use / read / write), secret pods (masked in the UI), pinned pods (included in every new chat), and `{{pod:NAME/KEY}}` references that let keys be *used* without being *shown*.
 - **AI operates the app** — built-in tools for pods, projects, providers, connectors, settings, chat history, logs, a sandboxed JavaScript runner and web fetch. A Claude-Code-style permission mode (Ask / Auto reads / Auto all) with inline Allow · Always · Deny.
 - **Logs** — every request (model, status, tokens, duration, errors), tool call and MCP event, plus journal entries the AI writes itself. Filter, search, export as JSON.
+- **iOS look & feel** — Liquid Glass UI: a floating glass tab bar (Chats / History / Settings), large titles that collapse into the top bar on scroll, sheets with grabbers, iOS switches and segmented controls, spring motion. Glass intensity is adjustable in Settings (Jelly / Balanced / Solid).
 - **PWA** — add to the home screen; light/dark themes; English and 中文.
 
 ---
@@ -94,7 +95,8 @@ app/
   src/lib/tools/              built-in tools, JS sandbox, tool registry + permission check
   src/lib/store.ts, db.ts     zustand state persisted to IndexedDB
   src/lib/pods.ts             pod helpers and {{pod:…}} resolution
-  src/components/, screens/   UI (chat, composer, sheets, settings screens)
+  src/components/, screens/   UI (tab bar, chat, composer, sheets, history + settings screens)
+  src/styles/                 base.css (tokens, glass material, motion) + app.css (components)
   src/i18n/                   en.ts / zh.ts (zh is type-checked against en)
   dev/mock-server.mjs         offline mock backend
   extras/cors-proxy.js        optional CORS proxy (Cloudflare Worker)

@@ -1,25 +1,48 @@
-import { ChevronLeft, ChevronRight, Loader2, Menu as MenuIcon, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
+  isValidElement,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
+  type CSSProperties,
   type InputHTMLAttributes,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { t } from '../i18n';
 import { goBack } from '../lib/router';
-import { setDrawer } from '../lib/store';
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(' ');
 }
 
-export function Spinner({ size = 16 }: { size?: number }) {
-  return <Loader2 size={size} className="spin" aria-hidden />;
+const vars = (v: Record<string, string | number>) => v as CSSProperties;
+
+/** iOS activity indicator (8 spokes, stepped rotation). */
+export function Spinner({ size = 18 }: { size?: number }) {
+  return (
+    <svg className="ios-spinner" width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      {Array.from({ length: 8 }, (_, i) => (
+        <line
+          key={i}
+          x1="12"
+          y1="2.8"
+          x2="12"
+          y2="7.4"
+          stroke="currentColor"
+          strokeWidth="2.3"
+          strokeLinecap="round"
+          opacity={0.18 + (i / 7) * 0.82}
+          transform={`rotate(${i * 45} 12 12)`}
+        />
+      ))}
+    </svg>
+  );
 }
 
 type BtnVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'soft';
@@ -74,6 +97,7 @@ export function Switch({ checked, onChange, disabled, label }: { checked: boolea
   );
 }
 
+/** iOS segmented control with a spring-sliding thumb. */
 export function Segmented<T extends string>({
   value,
   options,
@@ -85,8 +109,10 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void;
   size?: 'sm' | 'md';
 }) {
+  const idx = options.findIndex((o) => o.value === value);
   return (
-    <div className={cx('segmented', size === 'sm' && 'sm')} role="radiogroup">
+    <div className={cx('segmented', size === 'sm' && 'sm')} role="radiogroup" style={vars({ '--n': options.length, '--i': Math.max(0, idx) })}>
+      {idx >= 0 && <span className="seg-thumb" aria-hidden />}
       {options.map((o) => (
         <button
           key={o.value}
@@ -96,10 +122,49 @@ export function Segmented<T extends string>({
           className={cx(value === o.value && 'on')}
           onClick={() => onChange(o.value)}
         >
-          {o.label}
+          <span className="seg-label">{o.label}</span>
         </button>
       ))}
     </div>
+  );
+}
+
+export function Slider({
+  value,
+  min,
+  max,
+  step = 0.01,
+  onChange,
+  onCommit,
+  label,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (v: number) => void;
+  /** Called when the drag ends (pointer/touch/key release). */
+  onCommit?: (v: number) => void;
+  label: string;
+}) {
+  const pct = ((value - min) / (max - min)) * 100;
+  const commit = (e: { currentTarget: HTMLInputElement }) => onCommit?.(Number(e.currentTarget.value));
+  return (
+    <input
+      type="range"
+      className="slider"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      aria-label={label}
+      style={vars({ '--pct': `${pct}%` })}
+      onChange={(e) => onChange(Number(e.target.value))}
+      onPointerUp={commit}
+      onTouchEnd={commit}
+      onKeyUp={commit}
+      onBlur={commit}
+    />
   );
 }
 
@@ -141,7 +206,11 @@ export function Row({
 }) {
   const Tag = onClick ? 'button' : 'div';
   return (
-    <Tag className={cx('row', onClick && 'clickable', danger && 'danger', className)} onClick={onClick} type={onClick ? 'button' : undefined}>
+    <Tag
+      className={cx('row', onClick && 'clickable', danger && 'danger', !!icon && 'has-icon', className)}
+      onClick={onClick}
+      type={onClick ? 'button' : undefined}
+    >
       {icon && <span className="row-icon">{icon}</span>}
       <span className="row-main">
         <span className="row-title">{title}</span>
@@ -149,18 +218,28 @@ export function Row({
       </span>
       {detail !== undefined && <span className="row-detail">{detail}</span>}
       {right}
-      {chevron && <ChevronRight size={18} className="row-chev" />}
+      {chevron && <ChevronRight size={17} className="row-chev" />}
     </Tag>
   );
 }
 
 export function Field({ label, hint, children, error }: { label?: ReactNode; hint?: ReactNode; children: ReactNode; error?: string }) {
-  return (
-    <label className="field">
+  // A <label> would hand its whole text to the first button of a segmented control,
+  // so button groups get a labelled group instead.
+  const isGroup = isValidElement(children) && children.type === Segmented;
+  const body = (
+    <>
       {label && <span className="field-label">{label}</span>}
       {children}
       {error ? <span className="field-error">{error}</span> : hint && <span className="field-hint">{hint}</span>}
-    </label>
+    </>
+  );
+  return isGroup ? (
+    <div className="field" role="group" aria-label={typeof label === 'string' ? label : undefined}>
+      {body}
+    </div>
+  ) : (
+    <label className="field">{body}</label>
   );
 }
 
@@ -210,36 +289,126 @@ export function Empty({ icon, title, text, action }: { icon?: ReactNode; title: 
   );
 }
 
-/** Top bar for secondary screens. */
-export function ScreenBar({ title, back = '/', right, onBack }: { title: ReactNode; back?: string | false; right?: ReactNode; onBack?: () => void }) {
+// ───────── Navigation bar + large title ─────────
+
+/** Tracks the iOS large-title states for a scroll view: scrolled (hard edge on) and collapsed (inline title). */
+export function useLargeTitle() {
+  const [state, setState] = useState({ scrolled: false, collapsed: false });
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const current = useRef(state);
+  const onScroll = useCallback((el: HTMLElement) => {
+    const y = el.scrollTop;
+    const title = titleRef.current;
+    if (title) {
+      // Rubber-band pull: the large title grows a little, like UIKit.
+      title.style.transform = y < 0 ? `scale(${1 + Math.min(-y, 140) / 700})` : '';
+    }
+    const inset = parseFloat(getComputedStyle(el).paddingTop) || 0;
+    const threshold = title ? title.offsetTop + title.offsetHeight - inset - 6 : 0;
+    const next = { scrolled: y > 2, collapsed: !title || y > threshold };
+    if (next.scrolled !== current.current.scrolled || next.collapsed !== current.current.collapsed) {
+      current.current = next;
+      setState(next);
+    }
+  }, []);
+  return { state, titleRef, onScroll };
+}
+
+/** Tapping the active tab at its root scrolls that tab's page back to the top. */
+export function useScrollTopSignal(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const on = () => ref.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    window.addEventListener('cove:scroll-top', on);
+    return () => window.removeEventListener('cove:scroll-top', on);
+  }, [ref]);
+}
+
+export function NavBar({
+  title,
+  back,
+  left,
+  right,
+  scrolled,
+  collapsed,
+  onTitleClick,
+}: {
+  title: ReactNode;
+  back?: string;
+  left?: ReactNode;
+  right?: ReactNode;
+  scrolled: boolean;
+  collapsed: boolean;
+  onTitleClick?: (el: HTMLElement) => void;
+}) {
   return (
-    <header className="topbar screenbar">
-      <div className="topbar-side">
-        {back !== false ? (
-          <IconButton label={t('common.back')} onClick={onBack ?? (() => goBack(back))}>
-            <ChevronLeft size={22} />
+    <header className={cx('navbar', scrolled && 'scrolled', collapsed && 'collapsed')}>
+      <div className="navbar-side">
+        {back !== undefined ? (
+          <IconButton className="nav-btn" label={t('common.back')} onClick={() => goBack(back)}>
+            <ChevronLeft size={25} />
           </IconButton>
         ) : (
-          <IconButton label={t('nav.menu')} className="menu-only" onClick={() => setDrawer(true)}>
-            <MenuIcon size={20} />
-          </IconButton>
+          left
         )}
       </div>
-      <h1 className="topbar-title">{title}</h1>
-      <div className="topbar-side right">{right}</div>
+      <div className="navbar-title">
+        {onTitleClick ? (
+          <button className="navbar-title-btn" onClick={(e) => onTitleClick(e.currentTarget)}>
+            {title}
+          </button>
+        ) : (
+          <span>{title}</span>
+        )}
+      </div>
+      <div className="navbar-side right">{right}</div>
     </header>
   );
 }
 
-export function Screen({ children, narrow }: { children: ReactNode; narrow?: boolean }) {
+/** An iOS page: glass nav bar + scroll view that starts with a 34pt large title. */
+export function Page({
+  title,
+  back,
+  left,
+  right,
+  children,
+  narrow,
+  largeTitle = true,
+  className,
+}: {
+  title: ReactNode;
+  /** Fallback path for the back chevron; omit on tab roots. */
+  back?: string;
+  left?: ReactNode;
+  right?: ReactNode;
+  children: ReactNode;
+  narrow?: boolean;
+  largeTitle?: boolean;
+  className?: string;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { state, titleRef, onScroll } = useLargeTitle();
+  useScrollTopSignal(scrollRef);
   return (
-    <div className="screen scroll">
-      <div className={cx('screen-inner', narrow && 'narrow')}>{children}</div>
+    <div className={cx('page', back !== undefined && 'pushed', className)}>
+      <NavBar title={title} back={back} left={left} right={right} scrolled={state.scrolled} collapsed={!largeTitle || state.collapsed} />
+      <div className="page-scroll scroll" ref={scrollRef} onScroll={(e) => onScroll(e.currentTarget)}>
+        <div className={cx('page-inner', narrow && 'narrow')}>
+          {largeTitle && (
+            <h1 ref={titleRef} className="large-title">
+              {title}
+            </h1>
+          )}
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
 
-/** Bottom sheet on phones, centered dialog on wide screens. */
+// ───────── Sheets ─────────
+
+/** iOS bottom sheet: spring entrance, grabber, drag down to dismiss. Never a centered dialog. */
 export function Sheet({
   open,
   onClose,
@@ -247,6 +416,7 @@ export function Sheet({
   children,
   footer,
   size = 'md',
+  variant = 'default',
 }: {
   open: boolean;
   onClose: () => void;
@@ -254,27 +424,80 @@ export function Sheet({
   children: ReactNode;
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  variant?: 'default' | 'action';
 }) {
+  const [mounted, setMounted] = useState(open);
+  const [closing, setClosing] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ y0: number; t0: number; dy: number } | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      setClosing(false);
+      return;
+    }
+    if (!mounted) return;
+    setClosing(true);
+    const h = setTimeout(() => {
+      setMounted(false);
+      setClosing(false);
+    }, 280);
+    return () => clearTimeout(h);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
-  if (!open) return null;
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button, input, textarea, select')) return;
+    drag.current = { y0: e.clientY, t0: performance.now(), dy: 0 };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    if (sheetRef.current) sheetRef.current.style.transition = 'none';
+  };
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || !sheetRef.current) return;
+    const raw = e.clientY - d.y0;
+    d.dy = raw > 0 ? raw : -Math.sqrt(-raw) * 2; // rubber band upward
+    sheetRef.current.style.transform = `translateY(${d.dy}px)`;
+  };
+  const onPointerUp = () => {
+    const d = drag.current;
+    drag.current = null;
+    const el = sheetRef.current;
+    if (!d || !el) return;
+    const velocity = d.dy / Math.max(1, performance.now() - d.t0);
+    el.style.transition = '';
+    if (d.dy > 110 || velocity > 0.7) onClose();
+    else el.style.transform = '';
+  };
+
+  if (!mounted) return null;
   return createPortal(
-    <div className="sheet-root" role="dialog" aria-modal="true">
+    <div className={cx('sheet-root', closing && 'closing')} role="dialog" aria-modal="true">
       <div className="scrim" onClick={onClose} />
-      <div className={cx('sheet', `sheet-${size}`)}>
-        <div className="sheet-grip" aria-hidden />
-        {title && (
-          <div className="sheet-head">
-            <h2>{title}</h2>
-            <IconButton label={t('common.close')} onClick={onClose}>
-              <X size={20} />
-            </IconButton>
-          </div>
-        )}
+      <div ref={sheetRef} className={cx('sheet glass strong', `sheet-${size}`, variant === 'action' && 'sheet-action')}>
+        <div className="sheet-grab" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+          <div className="grabber" aria-hidden />
+          {title && (
+            <div className="sheet-head">
+              <span className="sheet-head-side" />
+              <h2>{title}</h2>
+              <span className="sheet-head-side right">
+                {variant !== 'action' && (
+                  <IconButton className="sheet-close" label={t('common.close')} onClick={onClose}>
+                    <X size={17} />
+                  </IconButton>
+                )}
+              </span>
+            </div>
+          )}
+        </div>
         <div className="sheet-body scroll">{children}</div>
         {footer && <div className="sheet-foot">{footer}</div>}
       </div>
@@ -283,7 +506,11 @@ export function Sheet({
   );
 }
 
-/** Small anchored popover menu. */
+// ───────── Context menus ─────────
+
+type MenuItem = { label: ReactNode; icon?: ReactNode; onClick: () => void; danger?: boolean };
+
+/** iOS context menu: glass, label on the left, symbol on the right, springs out of its anchor. */
 export function Menu({
   anchor,
   open,
@@ -295,26 +522,34 @@ export function Menu({
   anchor: HTMLElement | null;
   open: boolean;
   onClose: () => void;
-  items: ({ label: ReactNode; icon?: ReactNode; onClick: () => void; danger?: boolean } | 'sep')[];
+  items: (MenuItem | 'sep')[];
   align?: 'left' | 'right';
   placement?: 'above' | 'below';
 }) {
-  const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number }>({});
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; right?: number; origin: string }>({ origin: 'top left' });
   useLayoutEffect(() => {
     if (!open || !anchor) return;
     const r = anchor.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    const h = ref.current?.offsetHeight ?? items.length * 46;
+    let below = placement === 'below';
+    if (below && r.bottom + 8 + h > vh - 8) below = false;
+    if (!below && r.top - 8 - h < 8) below = true;
+    const width = ref.current?.offsetWidth ?? 250;
+    const alignLeft = align === 'left' ? r.left + width <= vw - 8 : r.right - width < 8;
     setPos({
-      ...(placement === 'below' ? { top: r.bottom + 6 } : { bottom: vh - r.top + 6 }),
-      ...(align === 'left' ? { left: Math.max(8, r.left) } : { right: Math.max(8, vw - r.right) }),
+      ...(below ? { top: r.bottom + 8 } : { bottom: vh - r.top + 8 }),
+      ...(alignLeft ? { left: Math.max(8, r.left) } : { right: Math.max(8, vw - r.right) }),
+      origin: `${below ? 'top' : 'bottom'} ${alignLeft ? 'left' : 'right'}`,
     });
-  }, [open, anchor, align, placement]);
+  }, [open, anchor, align, placement, items.length]);
   if (!open) return null;
   return createPortal(
     <div className="menu-root">
-      <div className="menu-scrim" onClick={onClose} />
-      <div className="menu" style={pos} role="menu">
+      <div className="menu-scrim" onClick={onClose} onContextMenu={(e) => e.preventDefault()} />
+      <div ref={ref} className="menu glass strong" style={{ top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right, transformOrigin: pos.origin }} role="menu">
         {items.map((it, i) =>
           it === 'sep' ? (
             <div key={i} className="menu-sep" />
@@ -328,8 +563,8 @@ export function Menu({
                 it.onClick();
               }}
             >
-              {it.icon}
               <span>{it.label}</span>
+              {it.icon}
             </button>
           ),
         )}

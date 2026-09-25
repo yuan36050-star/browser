@@ -51,6 +51,17 @@ export function Composer({
   const [optsOpen, setOptsOpen] = useState(false);
   const attachMenu = useMenu();
   const ta = useRef<HTMLTextAreaElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  // Publish the floating composer's height so the message list can clear it.
+  useEffect(() => {
+    const el = wrapRef.current;
+    const host = el?.parentElement;
+    if (!el || !host) return;
+    const ro = new ResizeObserver(() => host.style.setProperty('--composer-h', `${Math.round(el.offsetHeight)}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const provider = resolveProvider(opts);
   const model = resolveModel(provider, opts);
@@ -110,8 +121,8 @@ export function Composer({
   };
 
   return (
-    <div className="composer-wrap">
-      <div className="composer">
+    <div className="composer-wrap" ref={wrapRef}>
+      <div className="composer glass">
         {(atts.length > 0 || loading > 0) && (
           <div className="composer-atts scroll-x">
             {atts.map((a) => (
@@ -144,10 +155,10 @@ export function Composer({
         />
         <div className="composer-bar">
           <IconButton label={t('composer.attach')} onClick={(e) => attachMenu.show(e.currentTarget)}>
-            <Plus size={20} />
+            <Plus size={25} />
           </IconButton>
           <IconButton label={t('composer.options')} onClick={() => setOptsOpen(true)} active={thinking || !!opts.webSearch || connectorsOn > 0}>
-            <SlidersHorizontal size={18} />
+            <SlidersHorizontal size={22} />
           </IconButton>
           <span className="composer-flags">
             {thinking && (
@@ -168,11 +179,11 @@ export function Composer({
           </button>
           {busy ? (
             <button className="send-btn stop" aria-label={t('composer.stop')} onClick={onStop}>
-              <Square size={14} fill="currentColor" />
+              <Square size={13} fill="currentColor" />
             </button>
           ) : (
             <button className={cx('send-btn', canSend && 'ready')} aria-label={t('composer.send')} disabled={!canSend} onClick={send}>
-              <ArrowUp size={19} strokeWidth={2.4} />
+              <ArrowUp size={20} />
             </button>
           )}
         </div>

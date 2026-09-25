@@ -9,9 +9,8 @@ import {
   IconButton,
   KeyValueEditor,
   Row,
-  Screen,
-  ScreenBar,
-  Section,
+  Page,
+    Section,
   Segmented,
   Sheet,
   Switch,
@@ -41,16 +40,14 @@ export function ProvidersList() {
   const [presetOpen, setPresetOpen] = useState(false);
   return (
     <>
-      <ScreenBar
+      <Page
         title={t('nav.providers')}
         back="/settings"
         right={
           <IconButton label={t('providers.add')} onClick={() => setPresetOpen(true)}>
             <Plus size={21} />
           </IconButton>
-        }
-      />
-      <Screen>
+        }>
         <p className="lead">{t('providers.lead')}</p>
         {providers.length === 0 ? (
           <Empty
@@ -82,7 +79,7 @@ export function ProvidersList() {
             ))}
           </Section>
         )}
-      </Screen>
+      </Page>
       <Sheet open={presetOpen} onClose={() => setPresetOpen(false)} title={t('providers.choosePreset')}>
         <div className="preset-grid">
           {PRESETS.map((p) => (
@@ -199,8 +196,9 @@ export function ProviderEditor({ id, preset }: { id: string; preset?: string }) 
   if (!draft) {
     return (
       <>
-        <ScreenBar title={t('nav.providers')} back="/providers" />
-        <Empty title={t('common.notFound')} />
+        <Page title={t('nav.providers')} back="/providers">
+          <Empty title={t('common.notFound')} />
+        </Page>
       </>
     );
   }
@@ -274,16 +272,14 @@ export function ProviderEditor({ id, preset }: { id: string; preset?: string }) 
 
   return (
     <>
-      <ScreenBar
+      <Page
         title={isNew ? t('providers.new') : draft.name}
         back="/providers"
         right={
           <Button size="sm" variant="primary" onClick={() => save()}>
             {t('common.save')}
           </Button>
-        }
-      />
-      <Screen narrow>
+        } narrow>
         {presetInfo?.id === 'cc-bridge' && isNew && <p className="lead">{t('providers.bridgeNote')}</p>}
         <Section>
           <div className="form">
@@ -490,7 +486,7 @@ export function ProviderEditor({ id, preset }: { id: string; preset?: string }) 
           </Section>
         )}
         <p className="fine">{t('providers.storageNote', { masked: maskSecret(draft.apiKeys[0] ?? '') || '—' })}</p>
-      </Screen>
+      </Page>
       <FetchModelsSheet open={!!fetched} onClose={() => setFetched(null)} models={fetched ?? []} existing={draft.models} onAdd={(models) => set({ models })} />
     </>
   );

@@ -29,6 +29,10 @@ export const zh: Record<keyof typeof en, string> = {
   'common.showLess': '收起',
   'common.value': '值',
 
+  'tab.chats': '对话',
+  'tab.history': '历史',
+  'tab.settings': '设置',
+
   'nav.menu': '菜单',
   'nav.projects': '项目',
   'nav.pods': '小舱',
@@ -379,6 +383,11 @@ export const zh: Record<keyof typeof en, string> = {
   'settings.dark': '深色',
   'settings.textSize': '字号',
   'settings.assistantFont': '回复字体',
+  'settings.glass': '玻璃强度',
+  'settings.glassHint': '调节导航栏、标签栏和面板的通透程度。',
+  'glass.jelly': '果冻',
+  'glass.balanced': '均衡',
+  'glass.solid': '实心',
   'settings.serif': '衬线',
   'settings.sans': '无衬线',
   'settings.enterToSend': '回车键',

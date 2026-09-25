@@ -1,6 +1,6 @@
 import { Bot, Box, Copy, Eye, EyeOff, Lock, Pin, Plus, Sparkles, Trash2, User } from 'lucide-react';
 import { useState } from 'react';
-import { Badge, Button, cx, Empty, Field, IconButton, Row, Screen, ScreenBar, Section, Segmented, Sheet, Switch, TextArea, TextInput } from '../components/ui';
+import { Badge, Button, cx, Empty, Field, IconButton, Row, Page, Section, Segmented, Sheet, Switch, TextArea, TextInput } from '../components/ui';
 import { useT } from '../i18n';
 import { confirmDialog, promptDialog } from '../lib/dialog';
 import { newPod, removeEntry, writeEntry } from '../lib/pods';
@@ -37,15 +37,15 @@ export function PodsList() {
   };
   return (
     <>
-      <ScreenBar
+      <Page
         title={t('nav.pods')}
         right={
           <IconButton label={t('pods.new')} onClick={() => void create()}>
             <Plus size={21} />
           </IconButton>
         }
-      />
-      <Screen>
+        back="/settings"
+      >
         <p className="lead">{t('pods.lead')}</p>
         {pods.length === 0 ? (
           <Empty
@@ -93,7 +93,7 @@ export function PodsList() {
             )}
           </>
         )}
-      </Screen>
+      </Page>
     </>
   );
 }
@@ -148,8 +148,9 @@ export function PodDetail({ id }: { id: string }) {
   if (!pod) {
     return (
       <>
-        <ScreenBar title={t('nav.pods')} back="/pods" />
-        <Empty title={t('common.notFound')} />
+        <Page title={t('nav.pods')} back="/pods">
+          <Empty title={t('common.notFound')} />
+        </Page>
       </>
     );
   }
@@ -163,16 +164,14 @@ export function PodDetail({ id }: { id: string }) {
 
   return (
     <>
-      <ScreenBar
+      <Page
         title={`${pod.emoji} ${pod.name}`}
         back="/pods"
         right={
           <IconButton label={t('pods.addEntry')} onClick={() => setEditing({ entry: null })}>
             <Plus size={21} />
           </IconButton>
-        }
-      />
-      <Screen narrow>
+        } narrow>
         <div className="project-head">
           <button
             className="emoji-btn"
@@ -269,7 +268,7 @@ export function PodDetail({ id }: { id: string }) {
             }}
           />
         </Section>
-      </Screen>
+      </Page>
       {editing && <EntrySheet key={editing.entry?.key ?? 'new'} pod={pod} entry={editing.entry} open onClose={() => setEditing(null)} />}
     </>
   );
