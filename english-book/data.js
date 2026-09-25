@@ -10,7 +10,7 @@
 window.BOOK = {
   units: [
     {
-      id: "u1", title: "Campus Life", titleZh: "校园生活", emoji: "🎓",
+      id: "u1", level: "intermediate", title: "Campus Life", titleZh: "校园生活", emoji: "🎓",
       words: [
         { w: "academic", ph: "/ˌækəˈdemɪk/", pos: "adj.", zh: "学术的；学业的", ex: "She has an excellent academic record.", exZh: "她的学业成绩非常优秀。" },
         { w: "semester", ph: "/sɪˈmestər/", pos: "n.", zh: "学期", ex: "The new semester begins in September.", exZh: "新学期九月开始。" },
@@ -49,7 +49,7 @@ window.BOOK = {
     },
 
     {
-      id: "u2", title: "Health & Lifestyle", titleZh: "健康生活", emoji: "🥗",
+      id: "u2", level: "intermediate", title: "Health & Lifestyle", titleZh: "健康生活", emoji: "🥗",
       words: [
         { w: "nutrition", ph: "/nuˈtrɪʃn/", pos: "n.", zh: "营养", ex: "Good nutrition is essential for children's growth.", exZh: "良好的营养对儿童成长至关重要。" },
         { w: "balanced", ph: "/ˈbælənst/", pos: "adj.", zh: "均衡的；平衡的", ex: "A balanced diet includes fruit, vegetables and grains.", exZh: "均衡的饮食包括水果、蔬菜和谷物。" },
@@ -88,7 +88,7 @@ window.BOOK = {
     },
 
     {
-      id: "u3", title: "Technology", titleZh: "科技生活", emoji: "💡",
+      id: "u3", level: "intermediate", title: "Technology", titleZh: "科技生活", emoji: "💡",
       words: [
         { w: "device", ph: "/dɪˈvaɪs/", pos: "n.", zh: "设备；装置", ex: "Smartphones are the most popular device among students.", exZh: "智能手机是学生中最流行的设备。" },
         { w: "digital", ph: "/ˈdɪdʒɪtl/", pos: "adj.", zh: "数字的；数码的", ex: "We live in a digital age.", exZh: "我们生活在数字时代。" },
@@ -127,7 +127,7 @@ window.BOOK = {
     },
 
     {
-      id: "u4", title: "Environment", titleZh: "环境保护", emoji: "🌿",
+      id: "u4", level: "intermediate", title: "Environment", titleZh: "环境保护", emoji: "🌿",
       words: [
         { w: "pollution", ph: "/pəˈluːʃn/", pos: "n.", zh: "污染", ex: "Air pollution is a serious problem in many cities.", exZh: "空气污染是许多城市的严重问题。" },
         { w: "climate", ph: "/ˈklaɪmət/", pos: "n.", zh: "气候", ex: "Climate change affects every country in the world.", exZh: "气候变化影响着世界上的每一个国家。" },
@@ -166,7 +166,7 @@ window.BOOK = {
     },
 
     {
-      id: "u5", title: "Work & Career", titleZh: "求职与职场", emoji: "💼",
+      id: "u5", level: "intermediate", title: "Work & Career", titleZh: "求职与职场", emoji: "💼",
       words: [
         { w: "career", ph: "/kəˈrɪr/", pos: "n.", zh: "职业；事业", ex: "She wants a career in medicine.", exZh: "她想从事医学职业。" },
         { w: "interview", ph: "/ˈɪntərvjuː/", pos: "n.", zh: "面试；采访", ex: "I have a job interview tomorrow morning.", exZh: "我明天上午有一场求职面试。" },
@@ -205,7 +205,7 @@ window.BOOK = {
     },
 
     {
-      id: "u6", title: "Travel & Culture", titleZh: "旅行与文化", emoji: "🧭",
+      id: "u6", level: "intermediate", title: "Travel & Culture", titleZh: "旅行与文化", emoji: "🧭",
       words: [
         { w: "destination", ph: "/ˌdestɪˈneɪʃn/", pos: "n.", zh: "目的地", ex: "Paris is a popular tourist destination.", exZh: "巴黎是热门旅游目的地。" },
         { w: "tradition", ph: "/trəˈdɪʃn/", pos: "n.", zh: "传统", ex: "Eating dumplings at the Spring Festival is a Chinese tradition.", exZh: "春节吃饺子是中国的传统。" },
@@ -244,7 +244,7 @@ window.BOOK = {
     },
 
     {
-      id: "u7", title: "Economy & Society", titleZh: "经济与社会", emoji: "🏙️",
+      id: "u7", level: "intermediate", title: "Economy & Society", titleZh: "经济与社会", emoji: "🏙️",
       words: [
         { w: "economy", ph: "/ɪˈkɑːnəmi/", pos: "n.", zh: "经济", ex: "China's economy has grown rapidly.", exZh: "中国经济发展迅速。" },
         { w: "consumer", ph: "/kənˈsuːmər/", pos: "n.", zh: "消费者", ex: "Consumers are spending more on services.", exZh: "消费者在服务上的花费越来越多。" },
@@ -283,7 +283,7 @@ window.BOOK = {
     },
 
     {
-      id: "u8", title: "Science & Discovery", titleZh: "科学探索", emoji: "🔭",
+      id: "u8", level: "intermediate", title: "Science & Discovery", titleZh: "科学探索", emoji: "🔭",
       words: [
         { w: "experiment", ph: "/ɪkˈsperɪmənt/", pos: "n.", zh: "实验", ex: "We did an experiment in the chemistry lab.", exZh: "我们在化学实验室做了一个实验。" },
         { w: "theory", ph: "/ˈθiːəri/", pos: "n.", zh: "理论；学说", ex: "Einstein's theory changed our view of time and space.", exZh: "爱因斯坦的理论改变了我们对时空的看法。" },

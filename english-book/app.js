@@ -62,6 +62,17 @@
   const unitWords = u => u.words.map(w => withKey(u, w));
   const allWords = () => allUnits().flatMap(unitWords);
   const wordByKey = key => allWords().find(w => w.key === key);
+  const isLearned = w => S.progress[w.key] && S.progress[w.key].box >= 2;
+
+  /* ---------------- Levels ---------------- */
+  const LEVELS = BOOK.levels;
+  const levelOf = u => LEVELS.find(l => l.id === u.level);
+  const levelUnits = id => BOOK.units.filter(u => u.level === id);
+  const unitNo = u => levelUnits(u.level).findIndex(x => x.id === u.id) + 1;
+  const levelPill = l => `<span class="lv lv-${l.id}">${l.zh} · ${l.cefr}</span>`;
+  const FILTERS = [['all', '全部'], ...LEVELS.map(l => [l.id, l.zh]), ['daily', '日常生活']];
+  // Units shown for a contents filter: a level id, 'daily', or 'all'.
+  const filterUnits = f => BOOK.units.filter(u => f === 'all' || u.level === f || (f === 'daily' && u.daily));
 
   // Regex source matching a word plus common inflections (s/ed/ing, dropped e, y->i, doubled consonant).
   function formPattern(word) {
@@ -201,10 +212,13 @@
     const due = dueWords().length, mis = S.mistakes.length;
     const badge = r => r === 'review' && due ? `<span class="count">${due}</span>` : r === 'mistakes' && mis ? `<span class="count">${mis > 99 ? '99+' : mis}</span>` : '';
     $('#sideNav').innerHTML = NAV.map(([r, label, ic]) => `<a class="side-link ${route === r ? 'active' : ''}" href="#/${r}">${I[ic]}<span>${label}</span>${badge(r)}</a>`).join('');
-    $('#sideUnits').innerHTML = allUnits().map((u, i) => {
+    const link = (u, label) => {
       const st = unitStats(u);
-      return `<a class="side-link ${uid === u.id ? 'active' : ''}" href="#/unit/${u.id}"><span class="emo">${u.emoji}</span><span>${u.id === 'my' ? '我的词库' : `${i + 1}. ${esc(u.titleZh)}`}</span><span class="mini">${st.learned}/${st.total}</span></a>`;
-    }).join('');
+      return `<a class="side-link ${uid === u.id ? 'active' : ''}" href="#/unit/${u.id}"><span class="emo">${u.emoji}</span><span>${label}</span><span class="mini">${st.learned}/${st.total}</span></a>`;
+    };
+    $('#sideUnits').innerHTML = LEVELS.map(l => `<p class="side-sub lv-${l.id}"><i></i>${l.zh} ${l.en} <span>${l.cefr}</span></p>`
+      + levelUnits(l.id).map(u => link(u, `${unitNo(u)}. ${esc(u.titleZh)}`)).join('')).join('')
+      + (S.custom.length ? `<p class="side-sub"><i></i>我的词库</p>${link(getUnit('my'), '我的单词')}` : '');
     $('#tabbar').innerHTML = NAV.map(([r, label, ic]) => `<a class="tab-link ${route === r ? 'active' : ''}" href="#/${r}">${I[ic]}<span>${label.replace('我的', '')}</span>${badge(r)}</a>`).join('');
   }
 
@@ -241,7 +255,9 @@
     const mastered = words.filter(w => S.progress[w.key] && S.progress[w.key].box >= 5).length;
     const days = [...Array(14)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 13 + i); return S.log[fmtDate(d)] || 0; });
     const max = Math.max(goal, ...days);
-    const next = BOOK.units.find(u => unitStats(u).pct < 1) || BOOK.units[0];
+    const filter = FILTERS.some(f => f[0] === S.settings.homeLevel) ? S.settings.homeLevel : 'all';
+    const pool = filterUnits(filter);
+    const next = pool.find(u => unitStats(u).pct < 1) || pool[0];
     const dateStr = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
 
     view.innerHTML = `<div class="page">
@@ -256,7 +272,7 @@
           <div class="bar"><i style="width:${Math.min(100, done / goal * 100)}%"></i></div>
         </div>
         <div class="hero-actions">
-          ${due ? `<a class="btn primary" href="#/review">开始复习 · ${due} 词</a>` : `<a class="btn primary" href="#/unit/${next.id}">学习新词 · Unit ${BOOK.units.indexOf(next) + 1}</a>`}
+          ${due ? `<a class="btn primary" href="#/review">开始复习 · ${due} 词</a>` : `<a class="btn primary" href="#/unit/${next.id}">学习新词 · ${esc(next.titleZh)}</a>`}
           <a class="btn glass" href="#/unit/${next.id}/dictation">去听写</a>
         </div>
       </section>
@@ -274,22 +290,47 @@
         <div class="week-labels"><span>两周前</span><span>今天</span></div>
       </section>
 
-      <section class="stack">
+      <section class="stack" style="gap:16px">
         <div class="row between"><h2>目录 <span class="muted" style="font-size:1rem">Contents</span></h2><a class="btn ghost small" href="#/mywords">＋ 添加我的单词</a></div>
-        <div class="chapters">${allUnits().map((u, i) => chapterCard(u, i)).join('')}</div>
+        <div class="seg" id="lvFilter" role="tablist" aria-label="按难度筛选">${FILTERS.map(([k, l]) => `<button type="button" role="tab" data-f="${k}" aria-selected="${k === filter}" class="${k === filter ? 'on' : ''}">${l}</button>`).join('')}</div>
+        <div id="contents" class="stack" style="gap:28px">${contentsHTML(filter)}</div>
       </section>
     </div>`;
+    $('#lvFilter').addEventListener('click', e => {
+      const b = e.target.closest('[data-f]'); if (!b) return;
+      S.settings.homeLevel = b.dataset.f; save();
+      $$('#lvFilter button').forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
+      $('#contents').innerHTML = contentsHTML(b.dataset.f);
+    });
   }
 
-  function chapterCard(u, i) {
+  function contentsHTML(filter) {
+    const groups = LEVELS.map(l => {
+      const units = filterUnits(filter).filter(u => u.level === l.id);
+      if (!units.length) return '';
+      const words = units.flatMap(unitWords), learned = words.filter(isLearned).length;
+      return `<div class="level-group lv-${l.id}">
+        <div class="level-head">
+          <div class="stack" style="gap:2px"><div class="row" style="gap:8px">${levelPill(l)}<h3>${l.en}</h3></div><p class="muted small">${esc(l.desc)} · ${units.length} 个单元</p></div>
+          <div class="level-prog"><span>已学 ${learned} / ${words.length}</span><div class="bar"><i style="width:${words.length ? learned / words.length * 100 : 0}%"></i></div></div>
+        </div>
+        <div class="chapters">${units.map(u => chapterCard(u)).join('')}</div>
+      </div>`;
+    }).join('');
+    const mine = filter === 'all' && S.custom.length
+      ? `<div class="level-group"><div class="level-head"><h3>我的词库 <span class="muted" style="font-size:.9rem">My words</span></h3></div><div class="chapters">${chapterCard(getUnit('my'))}</div></div>` : '';
+    return groups + mine;
+  }
+
+  function chapterCard(u) {
     const st = unitStats(u);
     const d = k => S.done[u.id + ':' + k];
     const dots = u.id === 'my' ? '' : [['dict', '听写'], ['cloze', '完形'], ['reading', '阅读'], ['trans', '翻译']]
       .map(([k, l]) => `<span class="tag ${d(k) != null ? (d(k) >= .8 ? 'good' : 'warn') : ''}">${d(k) != null ? '✓ ' : ''}${l}</span>`).join('');
-    return `<a class="chapter" href="#/unit/${u.id}">
+    return `<a class="chapter ${u.level ? 'lv-' + u.level : ''}" href="#/unit/${u.id}">
       ${ring(st.pct)}
       <div style="min-width:0">
-        <div class="num">${u.id === 'my' ? 'Custom' : 'Unit ' + (i + 1)} · ${st.total} words</div>
+        <div class="num">${u.id === 'my' ? 'Custom' : 'Unit ' + unitNo(u)} · ${st.total} words${u.daily ? ' · <span class="daily">日常</span>' : ''}</div>
         <h3>${u.emoji} ${esc(u.title)}</h3>
         <div class="zh">${esc(u.titleZh)} · 已学 ${st.learned}/${st.total}</div>
         <div class="done-dots">${dots}</div>
@@ -306,13 +347,12 @@
       : [['words', '单词', 'Words'], ['dictation', '听写', 'Dictation'], ['cloze', '完形', 'Cloze'], ['reading', '阅读', 'Reading'], ['translation', '翻译', 'Translation']];
     if (!tabs.some(t => t[0] === tab)) tab = 'words';
     const st = unitStats(u);
-    const idx = BOOK.units.indexOf(BOOK.units.find(x => x.id === uid));
 
     view.innerHTML = `<div class="page">
       <div class="unit-head">
         <div class="stack" style="gap:4px">
           <a class="crumb" href="#/">← 目录</a>
-          <p class="eyebrow">${isMy ? 'Custom chapter' : 'Unit ' + (idx + 1)}</p>
+          <div class="row" style="gap:8px">${isMy ? '<p class="eyebrow">Custom chapter</p>' : `${levelPill(levelOf(u))}<p class="eyebrow">Unit ${unitNo(u)}${u.daily ? ' · 日常生活' : ''}</p>`}</div>
           <h1>${u.emoji} ${esc(u.title)}</h1>
           <p class="muted">${esc(u.titleZh)} · ${st.total} 个单词 · 已学 ${st.learned} · 掌握 ${st.mastered}</p>
         </div>
@@ -545,7 +585,7 @@
   function clozePane(pane, u, words) {
     const hasBank = !!u.cloze;
     let mode = hasBank ? 'bank' : 'example';
-    pane.innerHTML = `${hasBank ? `<div class="toolbar"><div class="seg" id="cmode"><button data-m="bank" class="on">选词填空</button><button data-m="example">例句填空</button></div><span class="muted small">${'四级 Section A 题型'}</span></div>` : ''}<div id="cbody" class="stack" style="gap:18px"></div>`;
+    pane.innerHTML = `${hasBank ? `<div class="toolbar"><div class="seg" id="cmode"><button data-m="bank" class="on">选词填空</button><button data-m="example">例句填空</button></div><span class="muted small">${{ beginner: '基础选词填空', intermediate: '四级 Section A 题型', advanced: '六级 Section A 题型' }[u.level] || ''}</span></div>` : ''}<div id="cbody" class="stack" style="gap:18px"></div>`;
     const body = $('#cbody', pane);
     const show = () => {
       $$('#cmode button', pane).forEach(b => b.classList.toggle('on', b.dataset.m === mode));
@@ -1047,7 +1087,7 @@ curiosity | 好奇心 | Curiosity is the key to learning. | 好奇心是学习�
         <div class="row" style="justify-content:flex-end"><button class="btn primary" id="pasteGo" hidden>恢复</button></div>
         <div class="settings-row"><div class="lbl"><b>重置</b><span>清除所有进度、错题和自定义单词</span></div><button class="btn bad" id="reset">重置全部</button></div>
       </section>
-      <p class="muted small" style="text-align:center">Word Garden · 内置 ${BOOK.units.length} 个单元 ${BOOK.units.reduce((a, u) => a + u.words.length, 0)} 个四级核心词</p>
+      <p class="muted small" style="text-align:center">Word Garden · 内置 ${BOOK.units.length} 个单元 ${BOOK.units.reduce((a, u) => a + u.words.length, 0)} 个单词，分${LEVELS.map(l => l.zh).join('、')}三个难度</p>
     </div>`;
     $$('[data-set]').forEach(g => g.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
