@@ -158,6 +158,24 @@
   const exampleHTML = w => w.ex ? `<div class="example"><div class="row" style="flex-wrap:nowrap;align-items:flex-start"><div class="grow"><div class="en">${markWord(w.ex, w.w)}</div>${w.exZh ? `<div class="cn">${esc(w.exZh)}</div>` : ''}</div>${speakBtn(w.ex)}</div></div>` : '';
   const pct = x => Math.round(x * 100) + '%';
 
+  // In-page confirmation (native confirm() is unavailable in some embedded viewers).
+  function ask(msg, okLabel = '确定', danger = false) {
+    return new Promise(resolve => {
+      const d = $('#dialog');
+      d.innerHTML = `<div class="dialog-box" role="alertdialog" aria-modal="true" aria-labelledby="dlgMsg">
+        <p id="dlgMsg">${esc(msg)}</p>
+        <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="dlgNo" type="button">取消</button><button class="btn ${danger ? 'bad' : 'primary'}" id="dlgYes" type="button">${esc(okLabel)}</button></div></div>`;
+      d.hidden = false;
+      const prevKey = keyFn;
+      const close = v => { d.hidden = true; keyFn = prevKey; resolve(v); };
+      keyFn = e => { if (e.key === 'Escape') close(false); };
+      $('#dlgNo', d).addEventListener('click', () => close(false));
+      $('#dlgYes', d).addEventListener('click', () => close(true));
+      d.onclick = e => { if (e.target === d) close(false); };
+      $('#dlgYes', d).focus();
+    });
+  }
+
   // One keyboard handler at a time, owned by the active exercise.
   let keyFn = null;
   const typing = e => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
@@ -578,9 +596,9 @@
         $('#submit', el).addEventListener('click', submit);
       }
     }
-    function submit() {
+    async function submit() {
       const empty = fills.filter(f => f == null).length;
-      if (empty && !confirm(`还有 ${empty} 个空没填，确定提交吗？`)) return;
+      if (empty && !(await ask(`还有 ${empty} 个空没填，确定提交吗？`, '提交'))) return;
       submitted = true;
       let right = 0;
       answers.forEach((a, b) => {
@@ -892,7 +910,7 @@
     </div>`;
     $$('[data-del]').forEach(b => b.addEventListener('click', () => { S.mistakes = S.mistakes.filter(m => m.id !== b.dataset.del); save(); router(); }));
     const clr = $('#clearAll');
-    if (clr) clr.addEventListener('click', () => { if (confirm('确定清空这些错题吗？')) { S.mistakes = S.mistakes.filter(m => filter !== 'all' && m.type !== filter); save(); router(); } });
+    if (clr) clr.addEventListener('click', async () => { if (await ask('确定清空这些错题吗？', '清空', true)) { S.mistakes = S.mistakes.filter(m => filter !== 'all' && m.type !== filter); save(); router(); } });
     const dr = $('#drill');
     if (dr) dr.addEventListener('click', () => {
       $('#mbody').innerHTML = '<div id="dbody" class="stack" style="gap:18px"></div>';
@@ -981,8 +999,8 @@ curiosity | 好奇心 | Curiosity is the key to learning. | 好奇心是学习�
           <div class="zh"><i class="muted serif">${esc(w.pos || '')}</i> ${esc(w.zh)}</div>${w.ex ? `<div class="muted small serif">${markWord(w.ex, w.w)}</div>` : ''}</div>
           ${speakBtn(w.w)}<button class="x-btn" data-del="${esc(w.w)}" aria-label="删除 ${esc(w.w)}" title="删除">×</button></div>`;
       }).join('') : `<div class="empty">${S.custom.length ? '没有匹配的单词' : '还没有添加单词'}</div>`;
-      $$('[data-del]', listEl).forEach(b => b.addEventListener('click', () => {
-        if (!confirm(`删除 “${b.dataset.del}” ？`)) return;
+      $$('[data-del]', listEl).forEach(b => b.addEventListener('click', async () => {
+        if (!(await ask(`删除 “${b.dataset.del}” ？`, '删除', true))) return;
         S.custom = S.custom.filter(x => x.w !== b.dataset.del);
         delete S.progress['my:' + b.dataset.del.toLowerCase()];
         save(); router();
@@ -1023,8 +1041,10 @@ curiosity | 好奇心 | Curiosity is the key to learning. | 好奇心是学习�
         <div class="settings-row"><div class="lbl"><b>自动发音</b><span>翻到新卡片时自动朗读单词</span></div>${seg('autoplay', [[true, '开'], [false, '关']])}</div>
       </section>
       <section class="card">
-        <div class="settings-row"><div class="lbl"><b>备份学习记录</b><span>进度只保存在这台设备的浏览器里，换设备前请先导出</span></div><button class="btn" id="exp">导出备份</button></div>
-        <div class="settings-row"><div class="lbl"><b>恢复备份</b><span>从导出的 .json 文件恢复</span></div><label class="btn">导入备份<input type="file" id="imp" accept=".json,application/json" hidden></label></div>
+        <div class="settings-row"><div class="lbl"><b>备份学习记录</b><span>进度只保存在这台设备的浏览器里，换设备前请先导出</span></div><div class="row"><button class="btn" id="copyExp">复制备份</button><button class="btn" id="exp">下载备份</button></div></div>
+        <div class="settings-row"><div class="lbl"><b>恢复备份</b><span>从 .json 文件或复制的备份文本恢复</span></div><div class="row"><button class="btn" id="pasteImp">粘贴备份</button><label class="btn">选择文件<input type="file" id="imp" accept=".json,application/json" hidden></label></div></div>
+        <textarea class="textarea" id="expText" hidden spellcheck="false" style="font-family:ui-monospace,Menlo,monospace;font-size:.8rem"></textarea>
+        <div class="row" style="justify-content:flex-end"><button class="btn primary" id="pasteGo" hidden>恢复</button></div>
         <div class="settings-row"><div class="lbl"><b>重置</b><span>清除所有进度、错题和自定义单词</span></div><button class="btn bad" id="reset">重置全部</button></div>
       </section>
       <p class="muted small" style="text-align:center">Word Garden · 内置 ${BOOK.units.length} 个单元 ${BOOK.units.reduce((a, u) => a + u.words.length, 0)} 个四级核心词</p>
@@ -1039,6 +1059,14 @@ curiosity | 好奇心 | Curiosity is the key to learning. | 好奇心是学习�
       $$('button', g).forEach(x => x.classList.toggle('on', x === b));
     }));
     $('#rate').addEventListener('input', e => { st.rate = +e.target.value; $('#rateVal').textContent = st.rate.toFixed(2) + '×'; save(); });
+    $('#copyExp').addEventListener('click', () => {
+      const text = JSON.stringify(S);
+      const fallback = () => { const t = $('#expText'); t.hidden = false; t.value = text; t.select(); toast('已选中备份内容，请手动复制'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('备份已复制，可粘贴保存到备忘录'), fallback);
+      else fallback();
+    });
+    $('#pasteImp').addEventListener('click', () => { const t = $('#expText'); t.hidden = false; t.value = ''; t.placeholder = '把之前复制的备份粘贴到这里，然后点“恢复”'; t.focus(); $('#pasteGo').hidden = false; });
+    $('#pasteGo').addEventListener('click', () => restore($('#expText').value));
     $('#exp').addEventListener('click', () => {
       const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -1049,20 +1077,20 @@ curiosity | 好奇心 | Curiosity is the key to learning. | 好奇心是学习�
     $('#imp').addEventListener('change', e => {
       const file = e.target.files[0]; if (!file) return;
       const rd = new FileReader();
-      rd.onload = () => {
-        try {
-          const d = JSON.parse(rd.result);
-          if (!d || typeof d.progress !== 'object') throw new Error('bad');
-          if (!confirm('用备份覆盖当前的学习记录吗？')) return;
-          const base = defaults();
-          S = Object.assign(base, d, { settings: Object.assign(base.settings, d.settings || {}) });
-          save(); applyTheme(); pickVoice(); toast('已恢复备份'); router();
-        } catch (err) { toast('无法读取这个文件'); }
-      };
+      rd.onload = () => restore(rd.result);
       rd.readAsText(file);
     });
-    $('#reset').addEventListener('click', () => {
-      if (!confirm('确定清除所有学习记录、错题和自定义单词吗？此操作无法撤销。')) return;
+    async function restore(text) {
+      let d;
+      try { d = JSON.parse(text); } catch (err) { d = null; }
+      if (!d || typeof d.progress !== 'object') { toast('无法识别这份备份，请确认内容完整'); return; }
+      if (!(await ask('用备份覆盖当前的学习记录吗？', '恢复'))) return;
+      const base = defaults();
+      S = Object.assign(base, d, { settings: Object.assign(base.settings, d.settings || {}) });
+      save(); applyTheme(); pickVoice(); toast('已恢复备份'); router();
+    }
+    $('#reset').addEventListener('click', async () => {
+      if (!(await ask('确定清除所有学习记录、错题和自定义单词吗？此操作无法撤销。', '全部清除', true))) return;
       S = defaults(); save(); applyTheme(); toast('已重置'); location.hash = '#/';
     });
   }

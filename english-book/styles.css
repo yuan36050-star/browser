@@ -65,7 +65,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 
 /* ============ Layout ============ */
 .topbar {
-  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 10px 16px; background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
 }
@@ -384,6 +384,10 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: .85rem
   box-shadow: var(--shadow); padding: 14px; display: flex; flex-direction: column; gap: 6px;
 }
 .popover .w { font-family: var(--serif); font-size: 1.35rem; font-weight: 600; }
+
+.dialog { position: fixed; inset: 0; z-index: 70; background: rgba(20, 16, 10, .45); display: grid; place-items: center; padding: 16px; }
+.dialog-box { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 20px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 18px; }
+.dialog-box p { font-size: 1rem; line-height: 1.6; }
 
 /* ============ Translation ============ */
 .src { font-size: 1.35rem; font-weight: 600; line-height: 1.5; }
